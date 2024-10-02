@@ -1,7 +1,7 @@
 // backend/src/routes/friendsRoutes.js
 const express = require('express');
 const router = express.Router();
-import { pool } from '../../tabellen/frends';
+const { pool } = require('../../tabellen/frends') ;
 
 // Route zum Abrufen der Freundesliste
 router.get('/frends', async (req, res) => {
