@@ -1,31 +1,43 @@
-// backend/src/routes/dbInsertUser.js
 const express = require('express');
 const router = express.Router();
-const { pool } = require('../../tabellen/frends') ;
+const { pool } = require('../../tabellen/frends');
 
-// Route zum Abrufen der Freundesliste
+// Route zum Hinzufügen oder Aktualisieren eines Benutzers
 router.post('/insertUser', async (req, res) => {
-    const { vorname, nachname, geborenam, geschlaecht, passwort, benutzername} = req.body;
+    // Extrahiere die Daten aus dem Request-Body
+    const { vorname, nachname, geborenam, geschlaecht, passwort, benutzername, email } = req.body;
 
-  try {
-    const query = `
-            INSERT INTO frends(vorname, nachname, geborenam, geschlaecht, passwort, benutzername)
-            VALUES ($1, $2, $3, $4, $5, $6)
-            ON CONFLICT (vorname, nachname, geborenam)
+    if (!email) {
+        return res.status(400).json({ error: 'Email is required' });
+    }
+
+    try {
+        // SQL-Abfrage mit ON CONFLICT
+        const query = `
+            INSERT INTO frends(vorname, nachname, geborenam, geschlaecht, passwort, benutzername, email)
+            VALUES ($1, $2, $3, $4, $5, $6, $7)
+            ON CONFLICT (email)
             DO UPDATE SET
-                 geschlaecht = EXCLUDED.geschlaecht,
+                vorname = EXCLUDED.vorname,
+                nachname = EXCLUDED.nachname,
+                geborenam = EXCLUDED.geborenam,
+                geschlaecht = EXCLUDED.geschlaecht,
                 passwort = EXCLUDED.passwort,
                 benutzername = EXCLUDED.benutzername
             RETURNING *;
         `;
-        const values = [vorname, nachname, geborenam, geschlaecht, passwort, benutzername];
+        // Werte für die Parameter
+        const values = [vorname, nachname, geborenam, geschlaecht, passwort, benutzername, email];
 
-    const result = await pool.query(query, values);
-    res.json(result.rows[0]);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Database query failed' });
-  }
+        // Führe die Abfrage aus
+        const result = await pool.query(query, values);
+
+        // Antworte mit dem eingefügten/aktualisierten Datensatz
+        res.json(result.rows[0]);
+    } catch (err) {
+        console.error('Error executing query:', err);
+        res.status(500).json({ error: 'Database query failed' });
+    }
 });
 
 module.exports = router;
